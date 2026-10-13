@@ -37,6 +37,8 @@ add_executable(${CMAKE_PROJECT_NAME}
         Core/utils/oled.c
         Core/utils/font.h
         Core/utils/font.c
+        Core/utils/aht20.h
+        Core/utils/aht20.c
 )
 
 # Add STM32CubeMX generated sources

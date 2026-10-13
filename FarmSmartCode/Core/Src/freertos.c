@@ -22,11 +22,14 @@
 #include "task.h"
 #include "main.h"
 #include "cmsis_os.h"
-#include "oled.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "usart.h"
+#include "oled.h"
+#include "aht20.h"
+#include <stdio.h>
+#include <string.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -116,15 +119,20 @@ void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN StartDefaultTask */
   OLED_Init();
-  osDelay(20);
-  OLED_NewFrame();
-  OLED_PrintString(0,0,"HELLO WORLD!!!");
-  OLED_PrintString(0,2,"I Love OLED!");
-  OLED_ShowFrame();
+  AHT20_Init();
+
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+    float temperature, humidity;
+    OLED_NewFrame();
+    AHT20_Read(&temperature, &humidity);
+    char msg[64];
+    sprintf(msg, "Temperature: %.2f C", temperature);
+    OLED_PrintString(0,0,msg);
+    OLED_ShowFrame();
+    HAL_UART_Transmit(&huart2, (uint8_t*) &msg, strlen(msg), 1000);
+    osDelay(100);
   }
   /* USER CODE END StartDefaultTask */
 }
