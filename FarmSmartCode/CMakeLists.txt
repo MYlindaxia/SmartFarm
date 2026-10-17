@@ -33,12 +33,26 @@ enable_language(C ASM)
 
 # Create an executable object type
 add_executable(${CMAKE_PROJECT_NAME}
-        Core/utils/oled.h
-        Core/utils/oled.c
-        Core/utils/font.h
-        Core/utils/font.c
-        Core/utils/aht20.h
-        Core/utils/aht20.c
+        Core/per/oled.h
+        Core/per/oled.c
+        Core/per/font.h
+        Core/per/font.c
+        Core/per/aht20.h
+        Core/per/aht20.c
+        Core/configuration/environment.h
+        Core/configuration/environment.c
+        Core/configuration/screen.h
+        Core/configuration/screen.c
+        Core/utils/FormatValue.h
+        Core/utils/FormatValue.c
+        Core/per/buzzer.h
+        Core/per/buzzer.c
+        Core/per/encoder.h
+        Core/per/encoder.c
+        Core/per/ble.h
+        Core/per/ble.c
+        Core/per/key.h
+        Core/per/key.c
 )
 
 # Add STM32CubeMX generated sources

@@ -26,10 +26,13 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "usart.h"
-#include "oled.h"
-#include "aht20.h"
+#include "../per/oled.h"
+#include "../per/aht20.h"
 #include <stdio.h>
-#include <string.h>
+#include "../per/encoder.h"
+#include "../per/ble.h"
+#include "../utils/FormatValue.h"
+#include "../per/buzzer.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -44,12 +47,15 @@
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-
+uint8_t count = 0;
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN Variables */
-
+char msg[64];
+int temperatureInt;
+int humidityInt;
+int temperatureFrac;
 /* USER CODE END Variables */
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
@@ -58,6 +64,30 @@ const osThreadAttr_t defaultTask_attributes = {
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
+/* Definitions for OLEDTask */
+osThreadId_t OLEDTaskHandle;
+const osThreadAttr_t OLEDTask_attributes = {
+  .name = "OLEDTask",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
+};
+/* Definitions for AHT20Task */
+osThreadId_t AHT20TaskHandle;
+const osThreadAttr_t AHT20Task_attributes = {
+  .name = "AHT20Task",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityLow,
+};
+/* Definitions for BLEQueue */
+osMessageQueueId_t BLEQueueHandle;
+const osMessageQueueAttr_t BLEQueue_attributes = {
+  .name = "BLEQueue"
+};
+/* Definitions for I2C_Bus_Mutex */
+osMutexId_t I2C_Bus_MutexHandle;
+const osMutexAttr_t I2C_Bus_Mutex_attributes = {
+  .name = "I2C_Bus_Mutex"
+};
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
@@ -65,6 +95,8 @@ const osThreadAttr_t defaultTask_attributes = {
 /* USER CODE END FunctionPrototypes */
 
 void StartDefaultTask(void *argument);
+void StartOLEDTask(void *argument);
+void StartAHT20Task(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -77,6 +109,9 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE BEGIN Init */
 
   /* USER CODE END Init */
+  /* Create the mutex(es) */
+  /* creation of I2C_Bus_Mutex */
+  I2C_Bus_MutexHandle = osMutexNew(&I2C_Bus_Mutex_attributes);
 
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
@@ -90,6 +125,10 @@ void MX_FREERTOS_Init(void) {
   /* start timers, add new ones, ... */
   /* USER CODE END RTOS_TIMERS */
 
+  /* Create the queue(s) */
+  /* creation of BLEQueue */
+  BLEQueueHandle = osMessageQueueNew (16, sizeof(uint8_t), &BLEQueue_attributes);
+
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
   /* USER CODE END RTOS_QUEUES */
@@ -97,6 +136,12 @@ void MX_FREERTOS_Init(void) {
   /* Create the thread(s) */
   /* creation of defaultTask */
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
+
+  /* creation of OLEDTask */
+  OLEDTaskHandle = osThreadNew(StartOLEDTask, NULL, &OLEDTask_attributes);
+
+  /* creation of AHT20Task */
+  AHT20TaskHandle = osThreadNew(StartAHT20Task, NULL, &AHT20Task_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -120,21 +165,74 @@ void StartDefaultTask(void *argument)
   /* USER CODE BEGIN StartDefaultTask */
   OLED_Init();
   AHT20_Init();
+  Knob_Init();
 
   /* Infinite loop */
   for(;;)
   {
-    float temperature, humidity;
-    OLED_NewFrame();
-    AHT20_Read(&temperature, &humidity);
-    char msg[64];
-    sprintf(msg, "Temperature: %.2f C", temperature);
-    OLED_PrintString(0,0,msg);
-    OLED_ShowFrame();
-    HAL_UART_Transmit(&huart2, (uint8_t*) &msg, strlen(msg), 1000);
+    switch (Knob_isRotating()) {
+      case KNOB_RIGHT: snprintf(msg, sizeof(msg), "RIGHT");   break;
+      case KNOB_LEFT:  snprintf(msg, sizeof(msg), "LEFT");   break;
+      case KNOB_CLICK: snprintf(msg, sizeof(msg), "CLICK"); break;
+      default: break;
+    }
+
     osDelay(100);
   }
   /* USER CODE END StartDefaultTask */
+}
+
+/* USER CODE BEGIN Header_StartOLEDTask */
+/**
+* @brief Function implementing the OLEDTask thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartOLEDTask */
+void StartOLEDTask(void *argument)
+{
+  /* USER CODE BEGIN StartOLEDTask */
+  /* Infinite loop */
+  for(;;)
+  {
+    osMutexAcquire(I2C_Bus_MutexHandle,osWaitForever);
+    OLED_NewFrame();
+    OLED_PrintString(0,0,"Now Temperature is :");
+    OLED_PrintString(0,1,msg);
+    OLED_ShowFrame();
+    osMutexRelease(I2C_Bus_MutexHandle);
+    osDelay(50);
+  }
+  /* USER CODE END StartOLEDTask */
+}
+
+/* USER CODE BEGIN Header_StartAHT20Task */
+/**
+* @brief Function implementing the AHT20Task thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartAHT20Task */
+void StartAHT20Task(void *argument)
+{
+  /* USER CODE BEGIN StartAHT20Task */
+  float temperature, humidity;
+  /* Infinite loop */
+  for(;;)
+  {
+
+    // osMutexAcquire(I2C_Bus_MutexHandle,osWaitForever);
+    // AHT20_Read(&temperature, &humidity);
+    //
+    // FormatValue(temperature,&temperatureInt,&temperatureFrac);
+    // FormatValue(humidity,&humidityInt,NULL);
+    // snprintf(msg, sizeof(msg), "%d.%d", temperatureInt,temperatureFrac);   /* 25 -> "25" */
+    // osMutexRelease(I2C_Bus_MutexHandle);
+
+
+    osDelay(1000);
+  }
+  /* USER CODE END StartAHT20Task */
 }
 
 /* Private application code --------------------------------------------------*/
