@@ -1,7 +1,7 @@
 //
 // Created by MYlin on 2026/10/17.
 //
-#include "key.h"
+#include "./key.h"
 
 #include "main.h"
 #include "stm32f1xx_hal_gpio.h"

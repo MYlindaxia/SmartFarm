@@ -1,7 +1,7 @@
 //
 // Created by MYlin on 2026/10/15.
 //
-#include "buzzer.h"
+#include "./buzzer.h"
 #include "tim.h"
 #include "stm32f1xx_hal_tim.h"
 

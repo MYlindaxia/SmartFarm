@@ -2,7 +2,7 @@
 // Created by MYlin on 2026/10/11.
 //
 
-#include "aht20.h"
+#include "./aht20.h"
 #include "i2c.h"
 #include "cmsis_os2.h"
 #include "stm32f1xx_hal_i2c.h"

@@ -1,0 +1,4 @@
+Core/Src/freertos.c:111:6:MX_FREERTOS_Init	8	static
+Core/Src/freertos.c:166:6:StartDefaultTask	16	static
+Core/Src/freertos.c:189:6:StartOLEDTask	160	static
+Core/Src/freertos.c:262:6:StartAHT20Task	16	static

@@ -2,7 +2,7 @@
 // Created by MYlin on 2026/10/19.
 //
 
-#include "light.h"
+#include "./light.h"
 #include "soft_I2C.h"
 #include "cmsis_os2.h"
 

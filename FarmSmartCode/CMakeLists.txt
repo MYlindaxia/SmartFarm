@@ -33,28 +33,28 @@ enable_language(C ASM)
 
 # Create an executable object type
 add_executable(${CMAKE_PROJECT_NAME}
-        Core/per/oled.h
-        Core/per/oled.c
-        Core/per/font.h
-        Core/per/font.c
-        Core/per/aht20.h
-        Core/per/aht20.c
+        Core/ASP/oled/oled.h
+        Core/ASP/oled/oled.c
+        Core/ASP/oled/font.h
+        Core/ASP/oled/font.c
+        Core/ASP/aht20/aht20.h
+        Core/ASP/aht20/aht20.c
         Core/configuration/environment.h
         Core/configuration/environment.c
         Core/configuration/screen.h
         Core/configuration/screen.c
         Core/utils/FormatValue.h
         Core/utils/FormatValue.c
-        Core/per/buzzer.h
-        Core/per/buzzer.c
-        Core/per/encoder.h
-        Core/per/encoder.c
-        Core/per/ble.h
-        Core/per/ble.c
-        Core/per/key.h
-        Core/per/key.c
-        Core/per/light.h
-        Core/per/light.c
+        Core/ASP/buzzer/buzzer.h
+        Core/ASP/buzzer/buzzer.c
+        Core/ASP/encoder/encoder.h
+        Core/ASP/encoder/encoder.c
+        Core/ASP/ble/ble.h
+        Core/ASP/ble/ble.c
+        Core/ASP/key/key.h
+        Core/ASP/key/key.c
+        Core/ASP/light/light.h
+        Core/ASP/light/light.c
         Core/utils/soft_I2C.h
         Core/utils/soft_I2C.c
 )

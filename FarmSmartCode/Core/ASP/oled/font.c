@@ -1,4 +1,4 @@
-#include "font.h"
+#include "./font.h"
 
 /* 6x8 ASCII 字库，索引 = ASCII码 - 0x20 */
 const uint8_t ascii_6x8[FONT6X8_COUNT][FONT6X8_W] = {

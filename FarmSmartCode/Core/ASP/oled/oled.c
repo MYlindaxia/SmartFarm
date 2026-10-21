@@ -5,7 +5,7 @@
 #include "cmsis_os2.h"
 #include "i2c.h"
 #include "stm32f1xx_hal_i2c.h"
-#include "oled.h"
+#include "./oled.h"
 #include "font.h"
 #include <stdint.h>
 #include <string.h>
