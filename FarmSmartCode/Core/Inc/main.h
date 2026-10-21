@@ -63,6 +63,10 @@ void Error_Handler(void);
 #define KEY2_GPIO_Port GPIOB
 #define ENV_KEY_Pin GPIO_PIN_15
 #define ENV_KEY_GPIO_Port GPIOB
+#define SDA_Pin GPIO_PIN_10
+#define SDA_GPIO_Port GPIOA
+#define SCL_Pin GPIO_PIN_11
+#define SCL_GPIO_Port GPIOA
 
 /* USER CODE BEGIN Private defines */
 

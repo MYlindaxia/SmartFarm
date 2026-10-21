@@ -5,16 +5,35 @@
 #ifndef FARMSMARTCODE_ENVIRONMENT_H
 #define FARMSMARTCODE_ENVIRONMENT_H
 
-#define MAX_TEMPERATURE 100.0f
-#define MIN_TEMPERATURE -100.0f
-#define MAX_HUMIDITY 100.0f
-#define MIN_HUMIDITY -100.0f
-#define MAX_SoilTemperature 100.0f
-#define MIN_SoilTemperature -100.0f
-#define MAX_Illuminance 100.0f
-#define MIN_Illuminance -100.0f
-#define MAX_Precipitation 100.0f
-#define MIN_Precipitation -100.0f
+typedef struct {
+    float temperature;
+    float humidity;
+    float soilTemperature;
+    float illuminance;
+    float precipitation;
+} SensorSnapshot;
+
+extern SensorSnapshot sensorSnapshot;
+
+typedef struct {
+    float min;
+    float max;
+}SafeRange;
+
+typedef struct  {
+    float MAX_TEMPERATURE;
+    float MIN_TEMPERATURE;
+    float MAX_HUMIDITY;
+    float MIN_HUMIDITY;
+    float MAX_SoilTemperature;
+    float MIN_SoilTemperature;
+    float MAX_Illuminance;
+    float MIN_Illuminance;
+    float MAX_Precipitation;
+    float MIN_Precipitation;
+}FarmSafeState;
+
+extern FarmSafeState farmSafeState;
 
 typedef enum{
     OK = 0,
@@ -22,19 +41,27 @@ typedef enum{
     LOW
 }SettingState;
 typedef struct {
-    float temperature;
-    float humidity;
-    float soilTemperature;
-    float illuminance;
-    float precipitation;
+    SafeRange temperature;
+    SafeRange humidity;
+    SafeRange soilTemperature;
+    SafeRange illuminance;
+    SafeRange precipitation;
 }UserSetState;
 extern UserSetState userSetState;
 
-SettingState SetTemperature(float temperature);
-SettingState SetHumidity(float humidity);
-SettingState SetSoilTemperature(float soilTemperature);
-SettingState SetIlluminance(float illuminance);
-SettingState SetPrecipitation(float precipitation);
+SettingState SetMaxTemperature(float temperature);
+SettingState SetMinTemperature(float temperature);
+SettingState SetMaxHumidity(float humidity);
+SettingState SetMinHumidity(float humidity);
+SettingState SetMaxSoilTemperature(float soilTemperature);
+SettingState SetMinSoilTemperature(float soilTemperature);
+SettingState SetMaxIlluminance(float illuminance);
+SettingState SetMinIlluminance(float illuminance);
+SettingState SetMaxPrecipitation(float precipitation);
+SettingState SetMinPrecipitation(float precipitation);
+
+
+void InitFarmSafeState(void);
 float GetTemperature(void);
 float GetHumidity(void);
 float GetSoilTemperature(void);

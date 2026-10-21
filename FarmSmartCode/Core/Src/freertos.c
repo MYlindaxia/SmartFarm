@@ -30,9 +30,11 @@
 #include "../per/aht20.h"
 #include <stdio.h>
 #include "../per/encoder.h"
+#include "../per/light.h"
 #include "../per/ble.h"
 #include "../utils/FormatValue.h"
 #include "../per/buzzer.h"
+#include "../utils/soft_I2C.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -47,6 +49,7 @@
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
+uint8_t ack;
 uint8_t count = 0;
 /* USER CODE END PM */
 
@@ -166,16 +169,10 @@ void StartDefaultTask(void *argument)
   OLED_Init();
   AHT20_Init();
   Knob_Init();
-
+  I2C_Init();
   /* Infinite loop */
   for(;;)
   {
-    switch (Knob_isRotating()) {
-      case KNOB_RIGHT: snprintf(msg, sizeof(msg), "RIGHT");   break;
-      case KNOB_LEFT:  snprintf(msg, sizeof(msg), "LEFT");   break;
-      case KNOB_CLICK: snprintf(msg, sizeof(msg), "CLICK"); break;
-      default: break;
-    }
 
     osDelay(100);
   }
@@ -192,16 +189,49 @@ void StartDefaultTask(void *argument)
 void StartOLEDTask(void *argument)
 {
   /* USER CODE BEGIN StartOLEDTask */
+  (void)argument;
+
+  char luxText[32];
+  float lux = 0.0f;
+  int luxInt = 0;
+  int luxFrac = 0;
+  uint8_t lightState;
+
+  I2C_Init();
+  lightState = Light_Init();
   /* Infinite loop */
   for(;;)
   {
-    osMutexAcquire(I2C_Bus_MutexHandle,osWaitForever);
+
+    if (lightState == LIGHT_OK) {
+      lightState = Light_ReadLux(&lux);
+    }
+
+    if (lightState == LIGHT_OK) {
+      FormatValue(lux, &luxInt, &luxFrac);
+
+      snprintf(luxText,
+               sizeof(luxText),
+               "Lux: %d.%d lx",
+               luxInt,
+               luxFrac);
+    } else {
+      snprintf(luxText,
+               sizeof(luxText),
+               "Light Error: %d",
+               lightState);
+    }
+
+    osMutexAcquire(I2C_Bus_MutexHandle, osWaitForever);
+
     OLED_NewFrame();
-    OLED_PrintString(0,0,"Now Temperature is :");
-    OLED_PrintString(0,1,msg);
+    OLED_PrintString(0, 0, "Light Sensor");
+    OLED_PrintString(0, 2, luxText);
     OLED_ShowFrame();
+
     osMutexRelease(I2C_Bus_MutexHandle);
-    osDelay(50);
+
+    osDelay(500);
   }
   /* USER CODE END StartOLEDTask */
 }

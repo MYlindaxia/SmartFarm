@@ -53,6 +53,10 @@ add_executable(${CMAKE_PROJECT_NAME}
         Core/per/ble.c
         Core/per/key.h
         Core/per/key.c
+        Core/per/light.h
+        Core/per/light.c
+        Core/utils/soft_I2C.h
+        Core/utils/soft_I2C.c
 )
 
 # Add STM32CubeMX generated sources
