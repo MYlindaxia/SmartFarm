@@ -62,6 +62,7 @@ SettingState SetMinPrecipitation(float precipitation);
 
 
 void InitFarmSafeState(void);
+void InitUserSetState(void);
 float GetTemperature(void);
 float GetHumidity(void);
 float GetSoilTemperature(void);

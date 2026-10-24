@@ -31,10 +31,12 @@
 #include <stdio.h>
 #include "../ASP/encoder/encoder.h"
 #include "../ASP/light/light.h"
-#include "../ASP/ble/ble.h"
 #include "../utils/FormatValue.h"
 #include "../ASP/buzzer/buzzer.h"
 #include "../utils/soft_I2C.h"
+#include "../ASP/key/key.h"
+#include "../configuration/screen.h"
+#include "../configuration/environment.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -49,10 +51,11 @@
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-
+uint8_t count = 0;
 char luxText[32];
 char temperatureText[32];
 char humidityText[32];
+KnobEvent direction;
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
@@ -87,6 +90,13 @@ const osThreadAttr_t InputTask_attributes = {
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityLow,
 };
+/* Definitions for OverloadDetecti */
+osThreadId_t OverloadDetectiHandle;
+const osThreadAttr_t OverloadDetecti_attributes = {
+  .name = "OverloadDetecti",
+  .stack_size = 128 * 4,
+  .priority = (osPriority_t) osPriorityLow,
+};
 /* Definitions for BLEQueue */
 osMessageQueueId_t BLEQueueHandle;
 const osMessageQueueAttr_t BLEQueue_attributes = {
@@ -100,13 +110,286 @@ const osMutexAttr_t I2C_Bus_Mutex_attributes = {
 
 /* Private function prototypes -----------------------------------------------*/
 /* USER CODE BEGIN FunctionPrototypes */
+void ShowScreen(void) {
+    OLED_PrintString(0,0,(char*)"Show:");
+    OLED_PrintString(0,1,temperatureText);
+    OLED_PrintString(0, 2, humidityText);
+    OLED_PrintString(0,3, luxText);
+}
 
+char isChange(uint8_t state) {
+  if (count == state) {
+    return '*';
+  }else {
+    return ' ';
+  }
+}
+
+
+void updateUserState(void) {
+    if (screenState == EDIT) {
+      switch (count) {
+        case 0:
+            /* 尚未选中可编辑字段，不处理旋转 */
+            break;
+
+        case 1: /* 最大温度 */
+            switch (direction) {
+                case KNOB_RIGHT:
+                    if (userSetState.temperature.max - 1.0f >=
+                        userSetState.temperature.min) {
+                        userSetState.temperature.max -= 1.0f;
+                    }
+                    break;
+
+                case KNOB_LEFT:
+                    if (userSetState.temperature.max + 1.0f <=
+                        farmSafeState.MAX_TEMPERATURE) {
+                        userSetState.temperature.max += 1.0f;
+                    }
+                    break;
+
+                default:
+                    break;
+            }
+            break;
+
+        case 2: /* 最小温度 */
+            switch (direction) {
+                case KNOB_RIGHT:
+                    if (userSetState.temperature.min - 1.0f >=
+                        farmSafeState.MIN_TEMPERATURE) {
+                        userSetState.temperature.min -= 1.0f;
+                    }
+                    break;
+
+                case KNOB_LEFT:
+                    if (userSetState.temperature.min + 1.0f <=
+                        userSetState.temperature.max) {
+                        userSetState.temperature.min += 1.0f;
+                    }
+                    break;
+
+                default:
+                    break;
+            }
+            break;
+
+        case 3: /* 最大湿度 */
+            switch (direction) {
+                case KNOB_RIGHT:
+                    if (userSetState.humidity.max - 1.0f >=
+                        userSetState.humidity.min) {
+                        userSetState.humidity.max -= 1.0f;
+                    }
+                    break;
+
+                case KNOB_LEFT:
+                    if (userSetState.humidity.max + 1.0f <=
+                        farmSafeState.MAX_HUMIDITY) {
+                        userSetState.humidity.max += 1.0f;
+                    }
+                    break;
+
+                default:
+                    break;
+            }
+            break;
+
+        case 4: /* 最小湿度 */
+            switch (direction) {
+                case KNOB_RIGHT:
+                    if (userSetState.humidity.min - 1.0f >=
+                        farmSafeState.MIN_HUMIDITY) {
+                        userSetState.humidity.min -= 1.0f;
+                    }
+                    break;
+
+                case KNOB_LEFT:
+                    if (userSetState.humidity.min + 1.0f <=
+                        userSetState.humidity.max) {
+                        userSetState.humidity.min += 1.0f;
+                    }
+                    break;
+
+                default:
+                    break;
+            }
+            break;
+
+        case 5: /* 最大光照强度 */
+            switch (direction) {
+                case KNOB_RIGHT:
+                    if (userSetState.illuminance.max - 1.0f >=
+                        userSetState.illuminance.min) {
+                        userSetState.illuminance.max -= 1.0f;
+                    }
+                    break;
+
+                case KNOB_LEFT:
+                    if (userSetState.illuminance.max + 1.0f <=
+                        farmSafeState.MAX_Illuminance) {
+                        userSetState.illuminance.max += 1.0f;
+                    }
+                    break;
+
+                default:
+                    break;
+            }
+            break;
+
+        case 6: /* 最小光照强度 */
+            switch (direction) {
+                case KNOB_RIGHT:
+                    if (userSetState.illuminance.min - 1.0f >=
+                        farmSafeState.MIN_Illuminance) {
+                        userSetState.illuminance.min -= 1.0f;
+                    }
+                    break;
+
+                case KNOB_LEFT:
+                    if (userSetState.illuminance.min + 1.0f <=
+                        userSetState.illuminance.max) {
+                        userSetState.illuminance.min += 1.0f;
+                    }
+                    break;
+
+                default:
+                    break;
+            }
+            break;
+
+        case 7: /* 最大降雨量 */
+            switch (direction) {
+                case KNOB_RIGHT:
+                    if (userSetState.precipitation.max - 1.0f >=
+                        userSetState.precipitation.min) {
+                        userSetState.precipitation.max -= 1.0f;
+                    }
+                    break;
+
+                case KNOB_LEFT:
+                    if (userSetState.precipitation.max + 1.0f <=
+                        farmSafeState.MAX_Precipitation) {
+                        userSetState.precipitation.max += 1.0f;
+                    }
+                    break;
+
+                default:
+                    break;
+            }
+            break;
+
+        case 8: /* 最小降雨量 */
+            switch (direction) {
+                case KNOB_RIGHT:
+                    if (userSetState.precipitation.min - 1.0f >=
+                        farmSafeState.MIN_Precipitation) {
+                        userSetState.precipitation.min -= 1.0f;
+                    }
+                    break;
+
+                case KNOB_LEFT:
+                    if (userSetState.precipitation.min + 1.0f <=
+                        userSetState.precipitation.max) {
+                        userSetState.precipitation.min += 1.0f;
+                    }
+                    break;
+
+                default:
+                    break;
+            }
+            break;
+
+        case 9: /* 最大土壤温度 */
+            switch (direction) {
+                case KNOB_RIGHT:
+                    if (userSetState.soilTemperature.max - 1.0f >=
+                        userSetState.soilTemperature.min) {
+                        userSetState.soilTemperature.max -= 1.0f;
+                    }
+                    break;
+
+                case KNOB_LEFT:
+                    if (userSetState.soilTemperature.max + 1.0f <=
+                        farmSafeState.MAX_SoilTemperature) {
+                        userSetState.soilTemperature.max += 1.0f;
+                    }
+                    break;
+
+                default:
+                    break;
+            }
+            break;
+
+        case 10: /* 最小土壤温度 */
+            switch (direction) {
+                case KNOB_RIGHT:
+                    if (userSetState.soilTemperature.min - 1.0f >=
+                        farmSafeState.MIN_SoilTemperature) {
+                        userSetState.soilTemperature.min -= 1.0f;
+                    }
+                    break;
+
+                case KNOB_LEFT:
+                    if (userSetState.soilTemperature.min + 1.0f <=
+                        userSetState.soilTemperature.max) {
+                        userSetState.soilTemperature.min += 1.0f;
+                    }
+                    break;
+
+                default:
+                    break;
+            }
+            break;
+
+        default:
+            break;
+    }
+    }
+}
+
+void EditScreen(void) {
+  char Text[32];
+  int intNum1;
+  int fracNum1;
+  int intNum2;
+  int fracNum2;
+
+  OLED_PrintString(0,0,(char*)"Edit:");
+  FormatValue(userSetState.temperature.max, &intNum1, &fracNum1);
+  FormatValue(userSetState.temperature.min, &intNum2, &fracNum2);
+  snprintf(Text, sizeof(Text), "%cT: %d.%d%cT: %d.%d",isChange(1), intNum1, fracNum1, isChange(2),intNum2, fracNum2);
+  // snprintf(Text, sizeof(Text), "Temp %d.%d, Temp %d.%d",intNum1,fracNum1, intNum2, fracNum2);
+  OLED_PrintString(0,1,Text);
+
+  FormatValue(userSetState.humidity.max, &intNum1, &fracNum1);
+  FormatValue(userSetState.humidity.min, &intNum2, &fracNum2);
+  snprintf(Text, sizeof(Text), "%cH: %d.%d%cH: %d.%d",isChange(3),intNum1,fracNum1,isChange(4), intNum2, fracNum2);
+  OLED_PrintString(0,2,Text);
+
+  FormatValue(userSetState.illuminance.max, &intNum1, &fracNum1);
+  FormatValue(userSetState.illuminance.min, &intNum2, &fracNum2);
+  snprintf(Text, sizeof(Text), "%cI: %d.%d%cI: %d.%d",isChange(5),intNum1,fracNum1,isChange(6), intNum2, fracNum2);
+  OLED_PrintString(0,3,Text);
+
+  FormatValue(userSetState.precipitation.max, &intNum1, &fracNum1);
+  FormatValue(userSetState.precipitation.min, &intNum2, &fracNum2);
+  snprintf(Text, sizeof(Text), "%cP: %d.%d%cP: %d.%d",isChange(7),intNum1,fracNum1,isChange(8), intNum2, fracNum2);
+  OLED_PrintString(0,4,Text);
+
+  FormatValue(userSetState.soilTemperature.max, &intNum1, &fracNum1);
+  FormatValue(userSetState.soilTemperature.min, &intNum2, &fracNum2);
+  snprintf(Text, sizeof(Text), "%cS: %d.%d%cS: %d.%d",isChange(9),intNum1,fracNum1,isChange(10), intNum2, fracNum2);
+  OLED_PrintString(0,5,Text);
+}
 /* USER CODE END FunctionPrototypes */
 
 void StartBLETask(void *argument);
 void StartOLEDTask(void *argument);
 void StartSensorTask(void *argument);
 void StartInputTask(void *argument);
+void StartOverloadDetection(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -156,12 +439,16 @@ void MX_FREERTOS_Init(void) {
   /* creation of InputTask */
   InputTaskHandle = osThreadNew(StartInputTask, NULL, &InputTask_attributes);
 
+  /* creation of OverloadDetecti */
+  OverloadDetectiHandle = osThreadNew(StartOverloadDetection, NULL, &OverloadDetecti_attributes);
+
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */
   /* add events, ... */
+
   /* USER CODE END RTOS_EVENTS */
 
 }
@@ -194,15 +481,20 @@ void StartBLETask(void *argument)
 void StartOLEDTask(void *argument)
 {
   /* USER CODE BEGIN StartOLEDTask */
+  OLED_Init();
+  InitFarmSafeState();
+  InitUserSetState();
   /* Infinite loop */
   for(;;)
   {
     osMutexAcquire(I2C_Bus_MutexHandle, osWaitForever);
 
     OLED_NewFrame();
-    OLED_PrintString(0,1,temperatureText);
-    OLED_PrintString(0, 2, humidityText);
-    OLED_PrintString(0,3, luxText);
+    if (screenState == SHOW) {
+      ShowScreen();
+    }else {
+      EditScreen();
+    }
     OLED_ShowFrame();
 
     osMutexRelease(I2C_Bus_MutexHandle);
@@ -225,12 +517,9 @@ void StartSensorTask(void *argument)
 
   float temperature, humidity;
   float lux = 0.0f;
-  int luxInt = 0;
-  int luxFrac = 0;
-  int temperatureInt;
-  int temperatureFrac;
-  int humidityInt;
-  int humidityFrac;
+  int intNum;
+  int fracNum;
+
 
   I2C_Init();
   Light_Init();
@@ -238,15 +527,20 @@ void StartSensorTask(void *argument)
   /* Infinite loop */
   for(;;)
   {
+    // 开始传感器采集
     AHT20_Read(&temperature, &humidity);
     Light_ReadLux(&lux);
-    FormatValue(lux, &luxInt, &luxFrac);
-    FormatValue(temperature, &temperatureInt, &temperatureFrac);
-    FormatValue(humidity, &humidityInt, &humidityFrac);
+    FormatValue(lux, &intNum, &fracNum);
+    snprintf(luxText,sizeof(luxText),"Lux: %d.%d lx",intNum,fracNum);
 
-    snprintf(luxText,sizeof(luxText),"Lux: %d.%d lx",luxInt,luxFrac);
-    snprintf(temperatureText, sizeof(temperatureText),"Temp: %d.%d C", temperatureInt, temperatureFrac);
-    snprintf(humidityText, sizeof(humidityText),"Humi: %d.%d %%", humidityInt, humidityFrac);
+    FormatValue(temperature, &intNum, &fracNum);
+    snprintf(temperatureText, sizeof(temperatureText),"Temp: %d.%d C", intNum, fracNum);
+
+    FormatValue(humidity, &intNum, &fracNum);
+    snprintf(humidityText, sizeof(humidityText),"Humi: %d.%d %%", intNum, fracNum);
+
+
+    // 检测参数是否过高/过低
 
     osDelay(1000);
   }
@@ -263,12 +557,48 @@ void StartSensorTask(void *argument)
 void StartInputTask(void *argument)
 {
   /* USER CODE BEGIN StartInputTask */
+  Knob_Init();
+  /* Infinite loop */
+  for(;;)
+  {
+    uint8_t changeIsBtn = isButton_1();
+    uint8_t envIsBtn = EnvIsBtn();
+    direction = Knob_isRotating();
+    updateUserState();
+    if (changeIsBtn == 1) {
+      ToggleScreen();
+    }else {
+      osDelay(1);
+    }
+
+    if (envIsBtn == 1) {
+      if (count <= 9) count++;
+      else count=0;
+      osDelay(1);
+    }else {
+      osDelay(1);
+    }
+    osDelay(10);
+  }
+  /* USER CODE END StartInputTask */
+}
+
+/* USER CODE BEGIN Header_StartOverloadDetection */
+/**
+* @brief Function implementing the OverloadDetecti thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartOverloadDetection */
+void StartOverloadDetection(void *argument)
+{
+  /* USER CODE BEGIN StartOverloadDetection */
   /* Infinite loop */
   for(;;)
   {
     osDelay(1);
   }
-  /* USER CODE END StartInputTask */
+  /* USER CODE END StartOverloadDetection */
 }
 
 /* Private application code --------------------------------------------------*/

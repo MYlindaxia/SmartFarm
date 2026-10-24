@@ -22,6 +22,19 @@ void Knob_Init(void) {
     Knob_SetCounter();
 }
 
+uint8_t EnvIsBtn(void) {
+    if (HAL_GPIO_ReadPin(ENV_KEY_GPIO_Port, ENV_KEY_Pin) == GPIO_PIN_RESET) {
+
+        osDelay(10);
+        if (HAL_GPIO_ReadPin(ENV_KEY_GPIO_Port, ENV_KEY_Pin) == GPIO_PIN_RESET) {
+
+            while (HAL_GPIO_ReadPin(ENV_KEY_GPIO_Port, ENV_KEY_Pin) == GPIO_PIN_RESET);
+            return 1;
+        }
+    }
+    return 0;
+}
+
 
 KnobEvent Knob_isRotating(void) {
     uint32_t counter = Knob_GetCounter();

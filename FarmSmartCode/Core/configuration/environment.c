@@ -11,12 +11,25 @@ void InitFarmSafeState() {
     farmSafeState.MIN_HUMIDITY = 0.0f;
     farmSafeState.MAX_SoilTemperature = 100.0f;
     farmSafeState.MIN_SoilTemperature = 0.0f;
-    farmSafeState.MAX_Illuminance = 0.0f;
+    farmSafeState.MAX_Illuminance = 100.0f;
     farmSafeState.MIN_Illuminance = 0.0f;
-    farmSafeState.MAX_Precipitation = 0.0f;
+    farmSafeState.MAX_Precipitation = 100.0f;
     farmSafeState.MIN_Precipitation = 0.0f;
-    farmSafeState.MAX_TEMPERATURE = 0.0f;
-    farmSafeState.MIN_TEMPERATURE = 0.0f;
+    farmSafeState.MAX_TEMPERATURE = 100.0f;
+    farmSafeState.MIN_TEMPERATURE = -100.0f;
+}
+
+void InitUserSetState() {
+    userSetState.temperature.max = 100.0f;
+    userSetState.temperature.min = 0.0f;
+    userSetState.humidity.max = 100.0f;
+    userSetState.humidity.min = 0.0f;
+    userSetState.soilTemperature.max = 100.0f;
+    userSetState.soilTemperature.min = 0.0f;
+    userSetState.illuminance.max = 100.0f;
+    userSetState.illuminance.min = 0.0f;
+    userSetState.precipitation.min = 0.0f;
+    userSetState.precipitation.max = 100.0f;
 }
 
 float GetTemperature(void) {

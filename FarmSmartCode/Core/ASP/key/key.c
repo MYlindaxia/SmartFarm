@@ -11,8 +11,9 @@ uint8_t isButton_1(void) {
     if (HAL_GPIO_ReadPin(KEY1_GPIO_Port,KEY1_Pin) == GPIO_PIN_RESET) {
         osDelay(10);
         if (HAL_GPIO_ReadPin(KEY1_GPIO_Port,KEY1_Pin) == GPIO_PIN_RESET) {
-            return 1;
+
             while (HAL_GPIO_ReadPin(KEY1_GPIO_Port,KEY1_Pin) == GPIO_PIN_RESET);
+            return 1;
         }
     }
     return 0;
@@ -21,8 +22,9 @@ uint8_t isButton_2(void) {
     if (HAL_GPIO_ReadPin(KEY2_GPIO_Port,KEY2_Pin) == GPIO_PIN_RESET) {
         osDelay(10);
         if (HAL_GPIO_ReadPin(KEY2_GPIO_Port,KEY2_Pin) == GPIO_PIN_RESET) {
-            return 1;
+
             while (HAL_GPIO_ReadPin(KEY2_GPIO_Port,KEY2_Pin) == GPIO_PIN_RESET);
+            return 1;
         }
     }
     return 0;
