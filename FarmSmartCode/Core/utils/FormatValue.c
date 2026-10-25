@@ -18,3 +18,26 @@ void FormatValue(float v, int *p_int, int *p_frac) {
         *p_int = -*p_int;              /* 符号补回到整数部分 */
     }
 }
+
+int32_t StringToTempX10(const char* str) {
+    int32_t val = 0;
+    uint8_t is_decimal = 0;
+    int32_t decimal_mult = 1;
+
+    while (*str) {
+        if (*str >= '0' && *str <= '9') {
+            if (!is_decimal) {
+                val = val * 10 + (*str - '0');
+            } else if (decimal_mult < 10) { // 只取一位小数
+                val = val * 10 + (*str - '0');
+                decimal_mult *= 10;
+            }
+        } else if (*str == '.') {
+            is_decimal = 1;
+            // 如果没有整数部分（比如 .5），补 0
+            if (val == 0) val = 0;
+        }
+        str++;
+    }
+    return val;
+}

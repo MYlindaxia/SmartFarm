@@ -37,6 +37,12 @@
 #include "../ASP/key/key.h"
 #include "../configuration/screen.h"
 #include "../configuration/environment.h"
+#include "../ASP/ble/ble.h"
+
+#define OK 0
+#define TEMP_ERROR 1
+#define HUM_ERROR 2
+#define LUX_ERROR 3
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -62,10 +68,10 @@ KnobEvent direction;
 /* USER CODE BEGIN Variables */
 char msg[64];
 /* USER CODE END Variables */
-/* Definitions for BLETask */
-osThreadId_t BLETaskHandle;
-const osThreadAttr_t BLETask_attributes = {
-  .name = "BLETask",
+/* Definitions for AlterTask */
+osThreadId_t AlterTaskHandle;
+const osThreadAttr_t AlterTask_attributes = {
+  .name = "AlterTask",
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
@@ -87,13 +93,6 @@ const osThreadAttr_t SensorTask_attributes = {
 osThreadId_t InputTaskHandle;
 const osThreadAttr_t InputTask_attributes = {
   .name = "InputTask",
-  .stack_size = 128 * 4,
-  .priority = (osPriority_t) osPriorityLow,
-};
-/* Definitions for OverloadDetecti */
-osThreadId_t OverloadDetectiHandle;
-const osThreadAttr_t OverloadDetecti_attributes = {
-  .name = "OverloadDetecti",
   .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityLow,
 };
@@ -124,7 +123,6 @@ char isChange(uint8_t state) {
     return ' ';
   }
 }
-
 
 void updateUserState(void) {
     if (screenState == EDIT) {
@@ -383,13 +381,23 @@ void EditScreen(void) {
   snprintf(Text, sizeof(Text), "%cS: %d.%d%cS: %d.%d",isChange(9),intNum1,fracNum1,isChange(10), intNum2, fracNum2);
   OLED_PrintString(0,5,Text);
 }
+
+uint8_t checkMsg(UserSetState userSetState) {
+    if (StringToTempX10(temperatureText) > (int32_t)(userSetState.temperature.max * 10) || StringToTempX10(temperatureText) < (int32_t)(userSetState.temperature.min*10)) {
+        return TEMP_ERROR;
+    }else if (StringToTempX10(humidityText) > (int32_t)(userSetState.humidity.max * 10) || StringToTempX10(humidityText) < (int32_t)(userSetState.humidity.min*10)) {
+        return HUM_ERROR;
+    }else if (StringToTempX10(luxText) > (int32_t)(userSetState.illuminance.max*10) || StringToTempX10(luxText) < (int32_t)(userSetState.illuminance.min*10)) {
+        return LUX_ERROR;
+    }
+    return OK;
+}
 /* USER CODE END FunctionPrototypes */
 
-void StartBLETask(void *argument);
+void StartAlterTask(void *argument);
 void StartOLEDTask(void *argument);
 void StartSensorTask(void *argument);
 void StartInputTask(void *argument);
-void StartOverloadDetection(void *argument);
 
 void MX_FREERTOS_Init(void); /* (MISRA C 2004 rule 8.1) */
 
@@ -427,8 +435,8 @@ void MX_FREERTOS_Init(void) {
   /* USER CODE END RTOS_QUEUES */
 
   /* Create the thread(s) */
-  /* creation of BLETask */
-  BLETaskHandle = osThreadNew(StartBLETask, NULL, &BLETask_attributes);
+  /* creation of AlterTask */
+  AlterTaskHandle = osThreadNew(StartAlterTask, NULL, &AlterTask_attributes);
 
   /* creation of OLEDTask */
   OLEDTaskHandle = osThreadNew(StartOLEDTask, NULL, &OLEDTask_attributes);
@@ -438,9 +446,6 @@ void MX_FREERTOS_Init(void) {
 
   /* creation of InputTask */
   InputTaskHandle = osThreadNew(StartInputTask, NULL, &InputTask_attributes);
-
-  /* creation of OverloadDetecti */
-  OverloadDetectiHandle = osThreadNew(StartOverloadDetection, NULL, &OverloadDetecti_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -453,22 +458,31 @@ void MX_FREERTOS_Init(void) {
 
 }
 
-/* USER CODE BEGIN Header_StartBLETask */
+/* USER CODE BEGIN Header_StartAlterTask */
 /**
-  * @brief  Function implementing the BLETask thread.
+  * @brief  Function implementing the AlterTask thread.
   * @param  argument: Not used
   * @retval None
   */
-/* USER CODE END Header_StartBLETask */
-void StartBLETask(void *argument)
+/* USER CODE END Header_StartAlterTask */
+void StartAlterTask(void *argument)
 {
-  /* USER CODE BEGIN StartBLETask */
+  /* USER CODE BEGIN StartAlterTask */
+    uint8_t error_msg = OK;
   /* Infinite loop */
   for(;;)
   {
+
+    error_msg = checkMsg(userSetState);
+    if (error_msg != OK) {
+        // Buzzer_On();
+        HAL_UART_Transmit(&huart2,(uint8_t*)"ERROR\n",6,1000);
+        osMessageQueuePut(BLEQueueHandle, &error_msg, 0, 100);
+        StartBLE();
+    }
     osDelay(1000);
   }
-  /* USER CODE END StartBLETask */
+  /* USER CODE END StartAlterTask */
 }
 
 /* USER CODE BEGIN Header_StartOLEDTask */
@@ -581,24 +595,6 @@ void StartInputTask(void *argument)
     osDelay(10);
   }
   /* USER CODE END StartInputTask */
-}
-
-/* USER CODE BEGIN Header_StartOverloadDetection */
-/**
-* @brief Function implementing the OverloadDetecti thread.
-* @param argument: Not used
-* @retval None
-*/
-/* USER CODE END Header_StartOverloadDetection */
-void StartOverloadDetection(void *argument)
-{
-  /* USER CODE BEGIN StartOverloadDetection */
-  /* Infinite loop */
-  for(;;)
-  {
-    osDelay(1);
-  }
-  /* USER CODE END StartOverloadDetection */
 }
 
 /* Private application code --------------------------------------------------*/
