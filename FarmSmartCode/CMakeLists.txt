@@ -57,6 +57,10 @@ add_executable(${CMAKE_PROJECT_NAME}
         Core/ASP/light/light.c
         Core/utils/soft_I2C.h
         Core/utils/soft_I2C.c
+        Core/ASP/soil/soil.h
+        Core/ASP/soil/soil.c
+        Core/ASP/rain/rain.h
+        Core/ASP/rain/rain.c
 )
 
 # Add STM32CubeMX generated sources

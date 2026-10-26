@@ -8,7 +8,7 @@
 typedef struct {
     float temperature;
     float humidity;
-    float soilTemperature;
+    float soilHumidity;
     float illuminance;
     float precipitation;
 } SensorSnapshot;
@@ -25,8 +25,8 @@ typedef struct  {
     float MIN_TEMPERATURE;
     float MAX_HUMIDITY;
     float MIN_HUMIDITY;
-    float MAX_SoilTemperature;
-    float MIN_SoilTemperature;
+    float MAX_SoilHUMIDITY;
+    float MIN_SoilHUMIDITY;
     float MAX_Illuminance;
     float MIN_Illuminance;
     float MAX_Precipitation;
@@ -43,7 +43,7 @@ typedef enum{
 typedef struct {
     SafeRange temperature;
     SafeRange humidity;
-    SafeRange soilTemperature;
+    SafeRange soilHumidity;
     SafeRange illuminance;
     SafeRange precipitation;
 }UserSetState;
@@ -53,8 +53,8 @@ SettingState SetMaxTemperature(float temperature);
 SettingState SetMinTemperature(float temperature);
 SettingState SetMaxHumidity(float humidity);
 SettingState SetMinHumidity(float humidity);
-SettingState SetMaxSoilTemperature(float soilTemperature);
-SettingState SetMinSoilTemperature(float soilTemperature);
+SettingState SetMaxSoilHumidity(float soilTemperature);
+SettingState SetMinSoilHumidity(float soilTemperature);
 SettingState SetMaxIlluminance(float illuminance);
 SettingState SetMinIlluminance(float illuminance);
 SettingState SetMaxPrecipitation(float precipitation);
@@ -65,7 +65,7 @@ void InitFarmSafeState(void);
 void InitUserSetState(void);
 float GetTemperature(void);
 float GetHumidity(void);
-float GetSoilTemperature(void);
+float GetSoilHumidity(void);
 float GetIlluminance(void);
 float GetPrecipitation(void);
 #endif //FARMSMARTCODE_ENVIRONMENT_H

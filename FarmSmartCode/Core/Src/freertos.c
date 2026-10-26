@@ -38,6 +38,7 @@
 #include "../configuration/screen.h"
 #include "../configuration/environment.h"
 #include "../ASP/ble/ble.h"
+#include "../ASP/soil/soil.h"
 
 #define OK 0
 #define TEMP_ERROR 1
@@ -61,6 +62,7 @@ uint8_t count = 0;
 char luxText[32];
 char temperatureText[32];
 char humidityText[32];
+char soilText[32];
 KnobEvent direction;
 /* USER CODE END PM */
 
@@ -114,6 +116,7 @@ void ShowScreen(void) {
     OLED_PrintString(0,1,temperatureText);
     OLED_PrintString(0, 2, humidityText);
     OLED_PrintString(0,3, luxText);
+    OLED_PrintString(0,4,soilText);
 }
 
 char isChange(uint8_t state) {
@@ -302,16 +305,16 @@ void updateUserState(void) {
         case 9: /* 最大土壤温度 */
             switch (direction) {
                 case KNOB_RIGHT:
-                    if (userSetState.soilTemperature.max - 1.0f >=
-                        userSetState.soilTemperature.min) {
-                        userSetState.soilTemperature.max -= 1.0f;
+                    if (userSetState.soilHumidity.max - 1.0f >=
+                        userSetState.soilHumidity.min) {
+                        userSetState.soilHumidity.max -= 1.0f;
                     }
                     break;
 
                 case KNOB_LEFT:
-                    if (userSetState.soilTemperature.max + 1.0f <=
-                        farmSafeState.MAX_SoilTemperature) {
-                        userSetState.soilTemperature.max += 1.0f;
+                    if (userSetState.soilHumidity.max + 1.0f <=
+                        farmSafeState.MAX_SoilHUMIDITY) {
+                        userSetState.soilHumidity.max += 1.0f;
                     }
                     break;
 
@@ -323,16 +326,16 @@ void updateUserState(void) {
         case 10: /* 最小土壤温度 */
             switch (direction) {
                 case KNOB_RIGHT:
-                    if (userSetState.soilTemperature.min - 1.0f >=
-                        farmSafeState.MIN_SoilTemperature) {
-                        userSetState.soilTemperature.min -= 1.0f;
+                    if (userSetState.soilHumidity.min - 1.0f >=
+                        farmSafeState.MAX_SoilHUMIDITY) {
+                        userSetState.soilHumidity.min -= 1.0f;
                     }
                     break;
 
                 case KNOB_LEFT:
-                    if (userSetState.soilTemperature.min + 1.0f <=
-                        userSetState.soilTemperature.max) {
-                        userSetState.soilTemperature.min += 1.0f;
+                    if (userSetState.soilHumidity.min + 1.0f <=
+                        userSetState.soilHumidity.max) {
+                        userSetState.soilHumidity.min += 1.0f;
                     }
                     break;
 
@@ -376,8 +379,8 @@ void EditScreen(void) {
   snprintf(Text, sizeof(Text), "%cP: %d.%d%cP: %d.%d",isChange(7),intNum1,fracNum1,isChange(8), intNum2, fracNum2);
   OLED_PrintString(0,4,Text);
 
-  FormatValue(userSetState.soilTemperature.max, &intNum1, &fracNum1);
-  FormatValue(userSetState.soilTemperature.min, &intNum2, &fracNum2);
+  FormatValue(userSetState.soilHumidity.max, &intNum1, &fracNum1);
+  FormatValue(userSetState.soilHumidity.min, &intNum2, &fracNum2);
   snprintf(Text, sizeof(Text), "%cS: %d.%d%cS: %d.%d",isChange(9),intNum1,fracNum1,isChange(10), intNum2, fracNum2);
   OLED_PrintString(0,5,Text);
 }
@@ -531,19 +534,29 @@ void StartSensorTask(void *argument)
 
   float temperature, humidity;
   float lux = 0.0f;
+  uint32_t soil;
+  uint32_t rain;
   int intNum;
   int fracNum;
 
 
   I2C_Init();
   Light_Init();
+  Soil_Init();
 
   /* Infinite loop */
   for(;;)
   {
     // 开始传感器采集
+    osMutexAcquire(I2C_Bus_MutexHandle, osWaitForever);
     AHT20_Read(&temperature, &humidity);
     Light_ReadLux(&lux);
+    soil = adc_dma_buffer[0];
+    rain = adc_dma_buffer[1];
+    if (soil > 4000) soil = 4000;
+    soil =  100 - soil / 40;
+    if (rain > 4000) rain = 4000;
+    rain =  100 - rain / 40;
     FormatValue(lux, &intNum, &fracNum);
     snprintf(luxText,sizeof(luxText),"Lux: %d.%d lx",intNum,fracNum);
 
@@ -553,6 +566,9 @@ void StartSensorTask(void *argument)
     FormatValue(humidity, &intNum, &fracNum);
     snprintf(humidityText, sizeof(humidityText),"Humi: %d.%d %%", intNum, fracNum);
 
+    snprintf(soilText,sizeof(soilText), "Soil: %d rain: %d", soil, rain);
+
+    osMutexRelease(I2C_Bus_MutexHandle);
 
     // 检测参数是否过高/过低
 

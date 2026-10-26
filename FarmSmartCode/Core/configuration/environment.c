@@ -9,8 +9,8 @@ SensorSnapshot sensorSnapshot;
 void InitFarmSafeState() {
     farmSafeState.MAX_HUMIDITY = 100.0f;
     farmSafeState.MIN_HUMIDITY = 0.0f;
-    farmSafeState.MAX_SoilTemperature = 100.0f;
-    farmSafeState.MIN_SoilTemperature = 0.0f;
+    farmSafeState.MAX_SoilHUMIDITY = 100.0f;
+    farmSafeState.MIN_SoilHUMIDITY = 0.0f;
     farmSafeState.MAX_Illuminance = 4000.0f;
     farmSafeState.MIN_Illuminance = 0.0f;
     farmSafeState.MAX_Precipitation = 100.0f;
@@ -24,8 +24,8 @@ void InitUserSetState() {
     userSetState.temperature.min = 0.0f;
     userSetState.humidity.max = 100.0f;
     userSetState.humidity.min = 0.0f;
-    userSetState.soilTemperature.max = 100.0f;
-    userSetState.soilTemperature.min = 0.0f;
+    userSetState.soilHumidity.max = 100.0f;
+    userSetState.soilHumidity.min = 0.0f;
     userSetState.illuminance.max = 2000.0f;
     userSetState.illuminance.min = 0.0f;
     userSetState.precipitation.min = 0.0f;
@@ -39,7 +39,7 @@ float GetHumidity(void) {
     return sensorSnapshot.humidity;
 }
 float GetSoilTemperature(void) {
-    return sensorSnapshot.soilTemperature;
+    return sensorSnapshot.soilHumidity;
 }
 float GetIlluminance(void) {
     return sensorSnapshot.illuminance;
@@ -85,21 +85,21 @@ SettingState SetMinHumidity(float humidity) {
     return OK;
 }
 SettingState SetMaxSoilTemperature(float soilTemperature) {
-    if (soilTemperature > farmSafeState.MAX_SoilTemperature) {
+    if (soilTemperature > farmSafeState.MAX_SoilHUMIDITY) {
         return EXCEED;
-    }else if (soilTemperature < farmSafeState.MAX_SoilTemperature) {
+    }else if (soilTemperature < farmSafeState.MAX_SoilHUMIDITY) {
         return LOW;
     }
-    userSetState.soilTemperature.max = soilTemperature;
+    userSetState.soilHumidity.max = soilTemperature;
     return OK;
 }
 SettingState SetMinSoilTemperature(float soilTemperature) {
-    if (soilTemperature > farmSafeState.MAX_SoilTemperature) {
+    if (soilTemperature > farmSafeState.MAX_SoilHUMIDITY) {
         return EXCEED;
-    }else if (soilTemperature < farmSafeState.MIN_SoilTemperature) {
+    }else if (soilTemperature < farmSafeState.MIN_SoilHUMIDITY) {
         return LOW;
     }
-    userSetState.soilTemperature.min = soilTemperature;
+    userSetState.soilHumidity.min = soilTemperature;
     return OK;
 }
 SettingState SetMaxIlluminance(float illuminance) {
